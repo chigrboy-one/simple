@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hollywood House Shoot Schedule</title>
+    <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f7fa;
+        }
+        .schedule-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        header {
+            text-align: center;
+            padding: 20px;
+            background-color: #f8fafc;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        h1 {
+            margin: 0;
+            font-size: 24px;
+            color: #1a202c;
+        }
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            padding: 15px 20px;
+            background-color: #f8fafc;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .file-controls {
+            display: flex;
+            align-items: center;
+        }
+        button {
+            background-color: #4299e1;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-left: 10px;
+        }
+        button:hover {
+            background-color: #3182ce;
+        }
+        .legend {
+            padding: 15px 20px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .legend h3 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        .legend-items {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .legend-item {
+            padding: 4px 12px;
+            border-radius: 16px;
+            font-size: 14px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th {
+            text-align: left;
+            padding: 12px;
+            background-color: #f8fafc;
+            border-bottom: 1px solid #e2e8f0;
+            font-weight: 600;
+        }
+        td {
+            padding: 8px 12px;
+            border-bottom: 1px solid #e2e8f0;
+            vertical-align: top;
+        }
+        tr:hover {
+            background-color: #f8fafc;
+        }
+        .time-cell {
+            width: 120px;
+        }
+        .time-input {
+            width: 100%;
+            padding: 6px;
+            border: 1px solid transparent;
+            border-radius: 4px;
+            font-family: inherit;
+            background-color: transparent;
+        }
+        .time-input:hover, .time-input:focus {
+            border-color: #cbd5e0;
+            outline: none;
+        }
+        .photographer-cell {
+            position: relative;
+            width: 22%;
+        }
+        .photographer-cell-mitch { border-left: 4px solid #ff9800; }
+        .photographer-cell-gerard { border-left: 4px solid #4caf50; }
+        .photographer-cell-ric { border-left: 4px solid #2196f3; }
+        .model-card {
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 0;
+            cursor: move;
+        }
+        .model-kendall { background-color: #ffe0b2; }
+        .model-dominique { background-color: #c8e6c9; }
+        .model-remington { background-color: #bbdefb; }
+        .model-setup { background-color: #e0e0e0; }
+        .model-break { background-color: #f5f5f5; }
+        .model-optional { background-color: #e1bee7; }
+        .model-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        .model-details {
+            font-size: 13px;
+        }
+        .notes-cell {
+            width: 20%;
+        }
+        .notes-textarea {
+            width: 100%;
+            min-height: 60px;
+            padding: 6px;
+            border: 1px solid transparent;
+            border-radius: 4px;
+            resize: vertical;
+            font-family: inherit;
+            font-size: 14px;
+            background-color: transparent;
+        }
+        .notes-textarea:hover, .notes-textarea:focus {
+            border-color: #cbd5e0;
+            outline: none;
+        }
+        .add-slot {
+            text-align: center;
+            padding: 15px;
+        }
+        .add-slot button {
+            width: 100%;
+            background-color: white;
+            color: #4a5568;
+            border: 1px dashed #cbd5e0;
+            padding: 8px;
+        }
+        .add-slot button:hover {
+            background-color: #f8fafc;
+            border-color: #a0aec0;
+        }
+        .instructions {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .instructions h2 {
+            margin-top: 0;
+            font-size: 18px;
+        }
+        .instructions ul {
+            padding-left: 20px;
+        }
+        .instructions li {
+            margin-bottom: 8px;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+        }
+        .modal-title {
+            margin-top: 0;
+            font-size: 18px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .form-input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #cbd5e0;
+            border-radius: 4px;
+            font-family: inherit;
+        }
+        .form-row {
+            display: flex;
+            gap: 15px;
+        }
+        .form-row .form-group {
+            flex: 1;
+        }
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .button-secondary {
+            background-color: white;
+            color: #4a5568;
+            border: 1px solid #cbd5e0;
+        }
+        .button-secondary:hover {
+            background-color: #f8fafc;
+        }
+        .dropzone-active {
+            background-color: rgba(66, 153, 225, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="schedule-container">
+        <header>
+            <h1>Hollywood House Shoot Schedule</h1>
+            <p>Drag and drop models between photographers and time slots</p>
+        </header>
+        
+        <div class="controls">
+            <div class="file-controls">
+                <input type="file" id="fileInput" accept=".xlsx,.xls" />
+                <button id="importButton">Import</button>
+            </div>
+            <button id="exportButton">Export to Excel</button>
+        </div>
+        
+        <div class="legend">
+            <h3>Models</h3>
+            <div class="legend-items">
+                <div class="legend-item model-kendall">Kendall</div>
+                <div class="legend-item model-dominique">Dominique</div>
+                <div class="legend-item model-remington">Remington</div>
+                <div class="legend-item model-setup">Setup</div>
+                <div class="legend-item model-break">Break</div>
+                <div class="legend-item model-optional">Optional</div>
+            </div>
+        </div>
+        
+        <div class="legend">
+            <h3>Photographers</h3>
+            <div class="legend-items">
+                <div class="legend-item" style="background-color: #ff9800; color: white;">Mitch (A)</div>
+                <div class="legend-item" style="background-color: #4caf50; color: white;">Gerard (B)</div>
+                <div class="legend-item" style="background-color: #2196f3; color: white;">Ric (C)</div>
+            </div>
+        </div>
+        
+        <table id="scheduleTable">
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>Mitch (A)</th>
+                    <th>Gerard (B)</th>
+                    <th>Ric (C)</th>
+                    <th>Notes</th>
+                </tr>
+            </thead>
+            <tbody id="scheduleBody">
+                <!-- Schedule rows will be added here -->
+            </tbody>
+        </table>
+        
+        <div class="add-slot">
+            <button id="addSlotButton">+ Add Time Slot</button>
+        </div>
+    </div>
+    
+    <div class="instructions">
+        <h2>Instructions</h2>
+        <ul>
+            <li>Drag and drop model cards between photographers and time slots</li>
+            <li>Double-click on any empty photographer slot to add a new model</li>
+            <li>Click on time slots to edit them directly</li>
+            <li>Add notes in the rightmost column for additional information</li>
+            <li>Use the "Import" button to load Excel files with your schedule</li>
+            <li>Use the "Export to Excel" button to save your changes</li>
+        </ul>
+    </div>
+    
+    <div id="addModelModal" class="modal">
+        <div class="modal-content">
+            <h3 class="modal-title">Add New Model</h3>
+            
+            <div class="form-group">
+                <label class="form-label">Model Name</label>
+                <input type="text" id="modelName" class="form-input" placeholder="Enter model name">
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Look Number</label>
+                    <input type="number" id="lookNumber" class="form-input" value="1" min="1">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Location Number</label>
+                    <input type="number" id="locationNumber" class="form-input" value="1" min="1">
+                </div>
+            </div>
+            
+            <div class="modal-actions">
+                <button id="cancelAddModel" class="button-secondary">Cancel</button>
+                <button id="confirmAddModel">Add Model</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Sample data for initial load
+        const sampleData = [
+            ["Time", "Mitch (A) Shoots", "Gerard (B) Shoots", "Ric (C) Shoots", "Notes"],
+            ["2:00 - 2:30", "Setup & Lighting Tests", "Setup & Lighting Tests", "Setup & Lighting Tests", "Test shots, final tweaks"],
+            ["2:30 - 3:00", "Kendall (Look 1, Location 1)", "Dominique (Look 1, Location 2)", "Remington (Look 1, Location 3)", "First rotation"],
+            ["3:00 - 3:30", "Dominique (Look 1, Location 3)", "Remington (Look 1, Location 1)", "Kendall (Look 1, Location 2)", "Second rotation"],
+            ["3:30 - 3:40", "Break / Wardrobe Change #1", "Break / Wardrobe Change #1", "Break / Wardrobe Change #1", "10 min flex"],
+            ["3:40 - 4:10", "Remington (Look 2, Location 2)", "Kendall (Look 2, Location 3)", "Dominique (Look 2, Location 1)", "Third rotation"],
+            ["4:10 - 4:40", "Kendall (Look 2, Location 1)", "Dominique (Look 2, Location 2)", "Remington (Look 2, Location 3)", "Fourth rotation"],
+            ["4:40 - 4:50", "Break / Wardrobe Change #2", "Break / Wardrobe Change #2", "Break / Wardrobe Change #2", "10 min flex"],
+            ["4:50 - 5:20", "Dominique (Look 3, Location 3)", "Remington (Look 3, Location 1)", "Kendall (Look 3, Location 2)", "Fifth rotation"],
+            ["5:20 - 5:50", "Remington (Look 3, Location 2)", "Kendall (Look 3, Location 3)", "Dominique (Look 3, Location 1)", "Sixth rotation"],
+            ["5:50 - 6:00", "Optional Wardrobe Change #3 / BTS / Wrap-Up", "Optional Wardrobe Change #3 / BTS / Wrap-Up", "Optional Wardrobe Change #3 / BTS / Wrap-Up", "Final shots, behind-the-scenes"]
+        ];
+
+        // Model class mapping
+        const modelClasses = {
+            'Kendall': 'model-kendall',
+            'Dominique': 'model-dominique',
+            'Remington': 'model-remington',
+            'Setup': 'model-setup',
+            'Break': 'model-break',
+            'Optional': 'model-optional'
+        };
+
+        // Global variables for drag and drop
+        let draggedElement = null;
+        let dragSourceCell = null;
+        let currentRowIndex = 0;
+
+        // DOM elements
+        const scheduleBody = document.getElementById('scheduleBody');
+        const addSlotButton = document.getElementById('addSlotButton');
+        const importButton = document.getElementById('importButton');
+        const exportButton = document.getElementById('exportButton');
+        const fileInput = document.getElementById('fileInput');
+        const addModelModal = document.getElementById('addModelModal');
+        const modelNameInput = document.getElementById('modelName');
+        const lookNumberInput = document.getElementById('lookNumber');
+        const locationNumberInput = document.getElementById('locationNumber');
+        const confirmAddModelButton = document.getElementById('confirmAddModel');
+        const cancelAddModelButton = document.getElementById('cancelAddModel');
+
+        // Variables for model modal
+        let modalTargetCell = null;
+
+        // Initialize the schedule with sample data
+        function initializeSchedule() {
+            // Skip the header row
+            for (let i = 1; i < sampleData.length; i++) {
+                const row = sampleData[i];
+                addScheduleRow(row[0], row[1], row[2], row[3], row[4]);
+            }
+        }
+
+        // Add a new schedule row
+        function addScheduleRow(time, mitchModel, gerardModel, ricModel, notes) {
+            const row = document.createElement('tr');
+            
+            // Time cell
+            const timeCell = document.createElement('td');
+            timeCell.className = 'time-cell';
+            const timeInput = document.createElement('input');
+            timeInput.type = 'text';
+            timeInput.className = 'time-input';
+            timeInput.value = time || '';
+            timeCell.appendChild(timeInput);
+            row.appendChild(timeCell);
+            
+            // Photographer cells
+            row.appendChild(createPhotographerCell('mitch', mitchModel));
+            row.appendChild(createPhotographerCell('gerard', gerardModel));
+            row.appendChild(createPhotographerCell('ric', ricModel));
+            
+            // Notes cell
+            const notesCell = document.createElement('td');
+            notesCell.className = 'notes-cell';
+            const notesTextarea = document.createElement('textarea');
+            notesTextarea.className = 'notes-textarea';
+            notesTextarea.placeholder = 'Add notes here...';
+            notesTextarea.value = notes || '';
+            notesCell.appendChild(notesTextarea);
+            row.appendChild(notesCell);
+            
+            scheduleBody.appendChild(row);
+        }
+
+        // Create a photographer cell with the model card
+        function createPhotographerCell(photographer, modelText) {
+            const cell = document.createElement('td');
+            cell.className = `photographer-cell photographer-cell-${photographer}`;
+            cell.setAttribute('data-photographer', photographer);
+            
+            cell.addEventListener('dragover', handleDragOver);
+            cell.addEventListener('dragleave', handleDragLeave);
+            cell.addEventListener('drop', handleDrop);
+            cell.addEventListener('dblclick', handleDoubleClick);
+            
+            if (modelText) {
+                const modelCard = createModelCard(modelText);
+                cell.appendChild(modelCard);
+            }
+            
+            return cell;
+        }
+
+        // Create a model card from text
+        function createModelCard(text) {
+            const card = document.createElement('div');
+            card.className = 'model-card';
+            card.draggable = true;
+            card.addEventListener('dragstart', handleDragStart);
+            
+            // Extract model name and details
+            const modelMatch = text.match(/^([A-Za-z]+)/);
+            const lookMatch = text.match(/Look (\d+)/);
+            const locationMatch = text.match(/Location (\d+)/);
+            
+            const modelName = modelMatch ? modelMatch[1] : text;
+            card.classList.add(modelClasses[modelName] || '');
+            
+            const titleElement = document.createElement('div');
+            titleElement.className = 'model-title';
+            titleElement.textContent = modelName;
+            card.appendChild(titleElement);
+            
+            if (lookMatch || locationMatch) {
+                const detailsElement = document.createElement('div');
+                detailsElement.className = 'model-details';
+                
+                if (lookMatch) {
+                    detailsElement.textContent = `Look ${lookMatch[1]}`;
+                }
+                
+                if (locationMatch) {
+                    if (lookMatch) detailsElement.textContent += ', ';
+                    detailsElement.textContent += `Location ${locationMatch[1]}`;
+                }
+                
+                card.appendChild(detailsElement);
+            }
+            
+            // Store the full text for reference
+            card.setAttribute('data-text', text);
+            
+            return card;
+        }
+
+        // Handle drag start
+        function handleDragStart(e) {
+            draggedElement = e.target;
+            dragSourceCell = e.target.parentNode;
+            
+            // For Firefox compatibility
+            e.dataTransfer.setData('text/plain', '');
+            
+            // Add styling for drag state
+            setTimeout(() => {
+                e.target.style.opacity = '0.4';
+            }, 0);
+        }
+
+        // Handle drag over
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.currentTarget.classList.add('dropzone-active');
+        }
+
+        // Handle drag leave
+        function handleDragLeave(e) {
+            e.currentTarget.classList.remove('dropzone-active');
+        }
+
+        // Handle drop
+        function handleDrop(e) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('dropzone-active');
+            
+            if (!draggedElement) return;
+            
+            const dropTarget = e.currentTarget;
+            
+            // If dropping on the same cell, do nothing
+            if (dropTarget === dragSourceCell) {
+                draggedElement.style.opacity = '1';
+                draggedElement = null;
+                dragSourceCell = null;
+                return;
+            }
+            
+            // If target already has a model, swap them
+            if (dropTarget.querySelector('.model-card')) {
+                const targetModel = dropTarget.querySelector('.model-card');
+                
+                // Move target model to source cell
+                dragSourceCell.appendChild(targetModel);
+                
+                // Move source model to target cell
+                dropTarget.appendChild(draggedElement);
+            } else {
+                // Just move the model to the empty target cell
+                dropTarget.appendChild(draggedElement);
+            }
+            
+            draggedElement.style.opacity = '1';
+            draggedElement = null;
+            dragSourceCell = null;
+        }
+
+        // Handle double click to add a model
+        function handleDoubleClick(e) {
+            // Only show modal if the cell is empty
+            if (!e.currentTarget.querySelector('.model-card')) {
+                modalTargetCell = e.currentTarget;
+                openAddModelModal();
+            }
+        }
+
+        // Open add model modal
+        function openAddModelModal() {
+            addModelModal.style.display = 'flex';
+            modelNameInput.value = '';
+            lookNumberInput.value = '1';
+            locationNumberInput.value = '1';
+            modelNameInput.focus();
+        }
+
+        // Close add model modal
+        function closeAddModelModal() {
+            addModelModal.style.display = 'none';
+            modalTargetCell = null;
+        }
+
+        // Add a new model from modal data
+        function addNewModel() {
+            const modelName = modelNameInput.value.trim();
+            if (!modelName || !modalTargetCell) return;
+            
+            const lookNumber = lookNumberInput.value;
+            const locationNumber = locationNumberInput.value;
+            
+            const modelText = `${modelName} (Look ${lookNumber}, Location ${locationNumber})`;
+            const modelCard = createModelCard(modelText);
+            
+            modalTargetCell.appendChild(modelCard);
+            closeAddModelModal();
+        }
+
+        // Add a new time slot
+        function addNewTimeSlot() {
+            let nextTime = "6:00 - 6:30";
+            
+            // Try to determine next time based on last row
+            if (scheduleBody.rows.length > 0) {
+                const lastRow = scheduleBody.rows[scheduleBody.rows.length - 1];
+                const lastTime = lastRow.cells[0].querySelector('input').value;
+                
+                // Try to parse the end time and add 30 minutes
+                const match = lastTime.match(/(\d+):(\d+)$/);
+                if (match) {
+                    let hour = parseInt(match[1]);
+                    let minute = parseInt(match[2]);
+                    
+                    minute += 30;
+                    if (minute >= 60) {
+                        hour += 1;
+                        minute -= 60;
+                    }
+                    
+                    nextTime = `${hour}:${minute === 0 ? '00' : minute} - ${hour}:${(minute + 30) % 60 === 0 ? '00' : (minute + 30) % 60}`;
+                    if (minute + 30 >= 60) {
+                        nextTime = `${hour}:${minute === 0 ? '00' : minute} - ${hour + 1}:${(minute + 30) % 60 === 0 ? '00' : (minute + 30) % 60}`;
+                    }
+                }
+            }
+            
+            addScheduleRow(nextTime, '', '', '', '');
+        }
+
+        // Import schedule from Excel file
+        function importSchedule() {
+            const file = fileInput.files[0];
+            if (!file) {
+                alert('Please select an Excel file to import.');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    
+                    // Get the first worksheet
+                    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                    
+                    // Convert to JSON
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                    
+                    // Clear current schedule
+                    scheduleBody.innerHTML = '';
+                    
+                    // Add new rows
+                    for (let i = 1; i < jsonData.length; i++) {
+                        const row = jsonData[i];
+                        addScheduleRow(row[0], row[1], row[2], row[3], row[4]);
+                    }
+                    
+                    alert('Schedule imported successfully!');
+                } catch (error) {
+                    console.error('Error importing file:', error);
+                    alert('Failed to import the Excel file. Please check the format.');
+                }
+            };
+            
+            reader.readAsArrayBuffer(file);
+        }
+
+        // Export schedule to Excel
+        function exportSchedule() {
+            // Collect data from the table
+            const data = [
+                ["Time", "Mitch (A) Shoots", "Gerard (B) Shoots", "Ric (C) Shoots", "Notes"]
+            ];
+            
+            for (let i = 0; i < scheduleBody.rows.length; i++) {
+                const row = scheduleBody.rows[i];
+                const rowData = [
+                    row.cells[0].querySelector('input').value,
+                    getModelText(row.cells[1]),
+                    getModelText(row.cells[2]),
+                    getModelText(row.cells[3]),
+                    row.cells[4].querySelector('textarea').value
+                ];
+                
+                data.push(rowData);
+            }
+            
+            // Create a worksheet
+            const ws = XLSX.utils.aoa_to_sheet(data);
+            
+            // Create a workbook
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Schedule");
+            
+            // Generate Excel file and trigger download
+            XLSX.writeFile(wb, "Hollywood_House_Shoot_Schedule.xlsx");
+        }
+
+        // Helper to get model text from a cell
+        function getModelText(cell) {
+            const modelCard = cell.querySelector('.model-card');
+            return modelCard ? modelCard.getAttribute('data-text') : '';
+        }
+
+        // Event listeners
+        addSlotButton.addEventListener('click', addNewTimeSlot);
+        importButton.addEventListener('click', importSchedule);
+        exportButton.addEventListener('click', exportSchedule);
+        confirmAddModelButton.addEventListener('click', addNewModel);
+        cancelAddModelButton.addEventListener('click', closeAddModelModal);
+
+        // Initialize the schedule when page loads
+        document.addEventListener('DOMContentLoaded', initializeSchedule);
+    </script>
+</body>
+</html>
